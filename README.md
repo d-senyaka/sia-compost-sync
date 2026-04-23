@@ -1,0 +1,2 @@
+# sia-compost-sync
+Sia-Compost-Sync : Divine insight paired with seamless synchronization. This Edge AI framework utilizes an ESP32 and TinyML to bridge the gap between organic waste and actionable data. By processing DHT11 and MQ4 sensor streams locally, the system autonomously classifies compost health while maintaining a real-time, bidirectional sync with a cloud-based dashboard for remote monitoring and intervention.
