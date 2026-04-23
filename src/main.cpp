@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
 #include <DHT.h>
 #include "model.h" // Import your generated TinyML model
 
@@ -6,7 +8,35 @@
 #define DHTTYPE DHT11
 #define MQ4_PIN 34
 
-DHT dht(DHTPIN, DHTTYPE);
+WiFiClient espClient;
+PubSubClient client(espClient);
+DHT dht(4, DHT11);
+Eloquent::Projects::CompostClassifier classifier;
+
+void setup_wifi() {
+    delay(10);
+    Serial.println("\nConnecting to WiFi...");
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
+    Serial.println("\nWiFi connected. IP: "); Serial.println(WiFi.localIP());
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+    // This is for Phase 4 bidirectional control (receiving commands)
+    Serial.print("Command received on topic: "); Serial.println(topic);
+}
+
+void reconnect() {
+    while (!client.connected()) {
+        Serial.print("Attempting MQTT connection...");
+        if (client.connect("SiaCompostClient")) {
+            Serial.println("connected");
+            client.subscribe("sia/compost/commands");
+        } else {
+            delay(5000);
+        }
+    }
+}
 
 // Create an instance of your classifier from model.h
 Eloquent::Projects::CompostClassifier classifier;
