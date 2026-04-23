@@ -2,12 +2,11 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <DHT.h>
-#include "model.h"
+#include "model.h" // Import your generated TinyML model
 
-// --- CONFIGURATION ---
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
-const char* mqtt_server = "broker.hivemq.com"; // Public testing broker
+#define DHTPIN 4
+#define DHTTYPE DHT11
+#define MQ4_PIN 34
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -39,35 +38,40 @@ void reconnect() {
     }
 }
 
+// Create an instance of your classifier from model.h
+Eloquent::Projects::CompostClassifier classifier;
+
 void setup() {
     Serial.begin(115200);
-    setup_wifi();
-    client.setServer(mqtt_server, 1883);
-    client.setCallback(callback);
     dht.begin();
+    pinMode(MQ4_PIN, INPUT);
+    Serial.println("Sia-Compost-Sync: Edge Inference Mode Active");
 }
 
 void loop() {
-    if (!client.connected()) reconnect();
-    client.loop();
-
     float h = dht.readHumidity();
     float t = dht.readTemperature();
-    int m = analogRead(34);
+    int m = analogRead(MQ4_PIN);
 
-    if (!isnan(h) && !isnan(t)) {
-        float input[3] = { t, h, (float)m };
-        String prediction = classifier.predictLabel(input);
-
-        // Create a JSON payload
-        String payload = "{\"temp\":" + String(t) + 
-                         ",\"hum\":" + String(h) + 
-                         ",\"methane\":" + String(m) + 
-                         ",\"status\":\"" + prediction + "\"}";
-
-        Serial.println("Publishing: " + payload);
-        client.publish("sia/compost/data", payload.c_str());
+    if (isnan(h) || isnan(t)) {
+        Serial.println("Sensor Error...");
+        return;
     }
 
-    delay(10000); // Publish every 10 seconds
+    // 1. Prepare the input for the model
+    // The order MUST match your training features: [Temperature, Humidity, Methane]
+    float input[3] = { t, h, (float)m };
+
+    // 2. Predict the state
+    String prediction = classifier.predictLabel(input);
+
+    // 3. Output the result
+    Serial.print("--- Local Insight ---");
+    Serial.print(" | State: ");
+    Serial.println(prediction);
+    
+    // Print raw data too (useful for Phase 4 MQTT sync)
+    Serial.printf("Data: T=%.2f, H=%.2f, M=%d\n", t, h, m);
+
+    delay(5000); // Check every 5 seconds
 }
