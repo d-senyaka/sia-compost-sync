@@ -1,0 +1,16 @@
+# Sia-Compost-Sync: Project Requirements
+# This file contains all necessary Python libraries for Data Acquisition, Model Training, and the Streamlit Dashboard.
+
+# Phase 1 & 2: Data Logging and ML Training
+pyserial
+pandas
+scikit-learn
+matplotlib
+seaborn
+
+# Phase 2: TinyML Conversion
+micromlgen
+
+# Phase 4 & 5: Connectivity and Dashboard
+paho-mqtt
+streamlit

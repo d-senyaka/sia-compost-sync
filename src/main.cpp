@@ -1,0 +1,77 @@
+#include <Arduino.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <DHT.h>
+#include "model.h" // Import your generated TinyML model
+
+#define DHTPIN 4
+#define DHTTYPE DHT11
+#define MQ4_PIN 34
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+DHT dht(4, DHT11);
+Eloquent::Projects::CompostClassifier classifier;
+
+void setup_wifi() {
+    delay(10);
+    Serial.println("\nConnecting to WiFi...");
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
+    Serial.println("\nWiFi connected. IP: "); Serial.println(WiFi.localIP());
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+    // This is for Phase 4 bidirectional control (receiving commands)
+    Serial.print("Command received on topic: "); Serial.println(topic);
+}
+
+void reconnect() {
+    while (!client.connected()) {
+        Serial.print("Attempting MQTT connection...");
+        if (client.connect("SiaCompostClient")) {
+            Serial.println("connected");
+            client.subscribe("sia/compost/commands");
+        } else {
+            delay(5000);
+        }
+    }
+}
+
+// Create an instance of your classifier from model.h
+Eloquent::Projects::CompostClassifier classifier;
+
+void setup() {
+    Serial.begin(115200);
+    dht.begin();
+    pinMode(MQ4_PIN, INPUT);
+    Serial.println("Sia-Compost-Sync: Edge Inference Mode Active");
+}
+
+void loop() {
+    float h = dht.readHumidity();
+    float t = dht.readTemperature();
+    int m = analogRead(MQ4_PIN);
+
+    if (isnan(h) || isnan(t)) {
+        Serial.println("Sensor Error...");
+        return;
+    }
+
+    // 1. Prepare the input for the model
+    // The order MUST match your training features: [Temperature, Humidity, Methane]
+    float input[3] = { t, h, (float)m };
+
+    // 2. Predict the state
+    String prediction = classifier.predictLabel(input);
+
+    // 3. Output the result
+    Serial.print("--- Local Insight ---");
+    Serial.print(" | State: ");
+    Serial.println(prediction);
+    
+    // Print raw data too (useful for Phase 4 MQTT sync)
+    Serial.printf("Data: T=%.2f, H=%.2f, M=%d\n", t, h, m);
+
+    delay(5000); // Check every 5 seconds
+}
