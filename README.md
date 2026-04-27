@@ -10,15 +10,13 @@
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 ![Project Type](https://img.shields.io/badge/Project-Edge%20AI%20Implementation-brown)
 
-### 🧠 Meaning of the Name
-> *Sia* is derived from the ancient Egyptian personification of Perception, Insight, and Intelligence.  
-> *Sync* represents the seamless, bidirectional harmony between the physical edge and the digital cloud.
-
-> *Divine insight into organic transformation.*
 
 **Sia-Compost-Sync** is an intelligent Edge AI monitoring system that transforms organic waste management into a data-driven process.  
 It explores how local intelligence (TinyML) and multi-sensor fusion can be deployed on constrained microcontrollers to autonomously oversee biological decomposition, bridging the gap between raw earth and actionable digital insight.
 
+### 🧠 Meaning of the Name
+> *Sia* is derived from the ancient Egyptian personification of Perception, Insight, and Intelligence.  
+> *Sync* represents the seamless, bidirectional harmony between the physical edge and the digital cloud.
 ---
 
 ## 🧠 Overview
