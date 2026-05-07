@@ -1,6 +1,7 @@
 import serial
 import csv
 import time
+import os
 
 # --- CONFIGURATION ---
 # Change 'COM3' to your actual port (e.g., '/dev/ttyUSB0' on Mac/Linux)
@@ -10,6 +11,7 @@ BAUD_RATE = 115200
 FILE_NAME = "compost_data.csv"
 FLUSH_EVERY_ROWS = 20
 FLUSH_INTERVAL_SECONDS = 2.0
+CSV_HEADER = ["Temperature", "Humidity", "Methane"]
 
 def main():
     try:
@@ -23,8 +25,9 @@ def main():
             pending_rows = 0
             last_flush = time.monotonic()
             
-            # If the file is new, add the header
-            # writer.writerow(["Temperature", "Humidity", "Methane", "Label"])
+            # If the file is new/empty, add the header expected by training scripts
+            if os.path.getsize(FILE_NAME) == 0:
+                writer.writerow(CSV_HEADER)
 
             while True:
                 raw = ser.readline()
