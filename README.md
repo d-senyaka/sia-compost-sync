@@ -66,7 +66,7 @@ cd sia-compost-sync
 
 ### 🔌 1. Hardware & Edge Deployment
 
-1.  **Environment Setup:** Open the `esp32_firmware` directory in **VS Code** with the **PlatformIO** extension installed.
+1.  **Environment Setup:** Open the repository root (`sia-compost-sync`) in **VS Code** with the **PlatformIO** extension installed.
 2.  **Wiring:** Connect your sensors to the ESP32 following this pinout:
     - **DHT11 (Data):** GPIO 4
     - **MQ4 (Analog Out):** GPIO 34
@@ -87,7 +87,17 @@ source venv/bin/activate     # or .\venv\Scripts\activate on Windows
 pip install -r requirements.txt
 ```
 
-3.  For the dashboard, open `index.html` locally or deploy it with GitHub Pages:
+3.  To collect raw sensor logs from serial into CSV:
+
+```bash
+python data_logger.py --port /dev/ttyUSB0
+# Windows example:
+# python data_logger.py --port COM3
+```
+
+The logger accepts both plain CSV serial lines (`temp,hum,methane`) and firmware-style lines (`Data: T=..., H=..., M=...`), and writes numeric rows to `compost_data.csv`.
+
+4.  For the dashboard, open `index.html` locally or deploy it with GitHub Pages:
     - GitHub repository **Settings** → **Pages**
     - **Source:** Deploy from a branch
     - **Branch:** `main` (or your default branch), folder `/(root)`

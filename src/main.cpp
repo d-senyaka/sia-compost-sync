@@ -12,6 +12,7 @@
 #define MQTT_PORT 1883
 #define DATA_TOPIC "sia/compost/data"
 #define COMMAND_TOPIC "sia/compost/commands"
+#define MQTT_RECONNECT_INTERVAL_MS 5000
 
 #ifndef WIFI_SSID
 #define WIFI_SSID ""
@@ -28,6 +29,7 @@ Eloquent::Projects::CompostClassifier classifier;
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 unsigned long lastSampleAtMs = 0;
+unsigned long lastMqttReconnectAttemptMs = 0;
 
 void setup_wifi() {
     delay(10);
@@ -47,14 +49,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void reconnect() {
-    while (!client.connected()) {
-        Serial.print("Attempting MQTT connection...");
-        if (client.connect("SiaCompostClient")) {
-            Serial.println("connected");
-            client.subscribe(COMMAND_TOPIC);
-        } else {
-            delay(5000);
-        }
+    Serial.print("Attempting MQTT connection...");
+    String clientId = "SiaCompostClient-";
+    clientId += String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFFFF), HEX);
+
+    if (client.connect(clientId.c_str())) {
+        Serial.println("connected");
+        client.subscribe(COMMAND_TOPIC);
+    } else {
+        Serial.print("failed, rc=");
+        Serial.println(client.state());
     }
 }
 
@@ -71,16 +75,21 @@ void setup() {
 void loop() {
     if (ssid[0] != '\0' && password[0] != '\0') {
         if (!client.connected()) {
-            reconnect();
+            unsigned long mqttNow = millis();
+            if ((unsigned long)(mqttNow - lastMqttReconnectAttemptMs) >= MQTT_RECONNECT_INTERVAL_MS) {
+                lastMqttReconnectAttemptMs = mqttNow;
+                reconnect();
+            }
+        } else {
+            client.loop();
         }
-        client.loop();
     }
 
-    unsigned long now = millis();
-    if ((unsigned long)(now - lastSampleAtMs) < SAMPLE_INTERVAL_MS) {
+    unsigned long sampleNow = millis();
+    if ((unsigned long)(sampleNow - lastSampleAtMs) < SAMPLE_INTERVAL_MS) {
         return;
     }
-    lastSampleAtMs = now;
+    lastSampleAtMs = sampleNow;
 
     float h = dht.readHumidity();
     float t = dht.readTemperature();
