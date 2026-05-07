@@ -13,7 +13,7 @@
 #define DATA_TOPIC "sia/compost/data"
 #define COMMAND_TOPIC "sia/compost/commands"
 #define MQTT_RECONNECT_INTERVAL_MS 5000
-#define RESET_DELAY_MS 100
+#define RESET_DELAY_MS 100  // Brief pause so reset message can flush on Serial
 
 #ifndef WIFI_SSID
 #define WIFI_SSID ""
@@ -31,6 +31,7 @@ const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 unsigned long lastSampleAtMs = 0;
 unsigned long lastMqttReconnectAttemptMs = 0;
+portMUX_TYPE sampleTimestampMux = portMUX_INITIALIZER_UNLOCKED;
 
 void setup_wifi() {
     delay(10);
@@ -55,7 +56,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
     command.toUpperCase();
 
     if (command == "REFRESH") {
-        lastSampleAtMs = millis() - SAMPLE_INTERVAL_MS;
+        unsigned long now = millis();
+        unsigned long refreshTimestamp = now - SAMPLE_INTERVAL_MS;
+        portENTER_CRITICAL(&sampleTimestampMux);
+        lastSampleAtMs = refreshTimestamp;
+        portEXIT_CRITICAL(&sampleTimestampMux);
         Serial.println("Action: Force refresh scheduled.");
     } else if (command == "RESET") {
         Serial.println("Action: System reset requested.");
@@ -106,10 +111,17 @@ void loop() {
     }
 
     unsigned long sampleNow = millis();
-    if ((unsigned long)(sampleNow - lastSampleAtMs) < SAMPLE_INTERVAL_MS) {
+    unsigned long lastSampleSnapshot;
+    portENTER_CRITICAL(&sampleTimestampMux);
+    lastSampleSnapshot = lastSampleAtMs;
+    portEXIT_CRITICAL(&sampleTimestampMux);
+
+    if ((unsigned long)(sampleNow - lastSampleSnapshot) < SAMPLE_INTERVAL_MS) {
         return;
     }
+    portENTER_CRITICAL(&sampleTimestampMux);
     lastSampleAtMs = sampleNow;
+    portEXIT_CRITICAL(&sampleTimestampMux);
 
     float h = dht.readHumidity();
     float t = dht.readTemperature();
