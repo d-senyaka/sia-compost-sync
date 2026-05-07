@@ -7,14 +7,36 @@
 #define DHTPIN 4
 #define DHTTYPE DHT11
 #define MQ4_PIN 34
+#define SAMPLE_INTERVAL_MS 5000
+#define MQTT_BROKER "broker.hivemq.com"
+#define MQTT_PORT 1883
+#define DATA_TOPIC "sia/compost/data"
+#define COMMAND_TOPIC "sia/compost/commands"
+#define MQTT_RECONNECT_INTERVAL_MS 5000
+
+#ifndef WIFI_SSID
+#define WIFI_SSID ""
+#endif
+
+#ifndef WIFI_PASSWORD
+#define WIFI_PASSWORD ""
+#endif
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-DHT dht(4, DHT11);
+DHT dht(DHTPIN, DHTTYPE);
 Eloquent::Projects::CompostClassifier classifier;
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASSWORD;
+unsigned long lastSampleAtMs = 0;
+unsigned long lastMqttReconnectAttemptMs = 0;
 
 void setup_wifi() {
     delay(10);
+    if (ssid[0] == '\0' || password[0] == '\0') {
+        Serial.println("WiFi credentials are not configured; skipping WiFi setup.");
+        return;
+    }
     Serial.println("\nConnecting to WiFi...");
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
@@ -27,28 +49,48 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void reconnect() {
-    while (!client.connected()) {
-        Serial.print("Attempting MQTT connection...");
-        if (client.connect("SiaCompostClient")) {
-            Serial.println("connected");
-            client.subscribe("sia/compost/commands");
-        } else {
-            delay(5000);
-        }
+    Serial.print("Attempting MQTT connection...");
+    String clientId = "SiaCompostClient-";
+    clientId += String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFFFF), HEX);
+
+    if (client.connect(clientId.c_str())) {
+        Serial.println("connected");
+        client.subscribe(COMMAND_TOPIC);
+    } else {
+        Serial.print("failed, rc=");
+        Serial.println(client.state());
     }
 }
-
-// Create an instance of your classifier from model.h
-Eloquent::Projects::CompostClassifier classifier;
 
 void setup() {
     Serial.begin(115200);
     dht.begin();
     pinMode(MQ4_PIN, INPUT);
+    setup_wifi();
+    client.setServer(MQTT_BROKER, MQTT_PORT);
+    client.setCallback(callback);
     Serial.println("Sia-Compost-Sync: Edge Inference Mode Active");
 }
 
 void loop() {
+    if (ssid[0] != '\0' && password[0] != '\0') {
+        if (!client.connected()) {
+            unsigned long mqttNow = millis();
+            if ((unsigned long)(mqttNow - lastMqttReconnectAttemptMs) >= MQTT_RECONNECT_INTERVAL_MS) {
+                lastMqttReconnectAttemptMs = mqttNow;
+                reconnect();
+            }
+        } else {
+            client.loop();
+        }
+    }
+
+    unsigned long sampleNow = millis();
+    if ((unsigned long)(sampleNow - lastSampleAtMs) < SAMPLE_INTERVAL_MS) {
+        return;
+    }
+    lastSampleAtMs = sampleNow;
+
     float h = dht.readHumidity();
     float t = dht.readTemperature();
     int m = analogRead(MQ4_PIN);
@@ -73,5 +115,11 @@ void loop() {
     // Print raw data too (useful for Phase 4 MQTT sync)
     Serial.printf("Data: T=%.2f, H=%.2f, M=%d\n", t, h, m);
 
-    delay(5000); // Check every 5 seconds
+    if (client.connected()) {
+        char payload[128];
+        snprintf(payload, sizeof(payload),
+                 "{\"temp\":%.2f,\"hum\":%.2f,\"methane\":%d,\"status\":\"%s\"}",
+                 t, h, m, prediction.c_str());
+        client.publish(DATA_TOPIC, payload);
+    }
 }
