@@ -20,7 +20,10 @@ def main():
         time.sleep(2)  # Wait for connection to stabilize
         print(f"Connected to {SERIAL_PORT}. Logging to {FILE_NAME}...")
 
-        file_is_new_or_empty = (not os.path.exists(FILE_NAME)) or os.path.getsize(FILE_NAME) == 0
+        try:
+            file_is_new_or_empty = os.path.getsize(FILE_NAME) == 0
+        except FileNotFoundError:
+            file_is_new_or_empty = True
 
         with open(FILE_NAME, mode='a', newline='') as file:
             writer = csv.writer(file)
