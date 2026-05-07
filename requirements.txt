@@ -10,6 +10,3 @@ seaborn
 
 # Phase 2: TinyML Conversion
 micromlgen
-
-# Phase 4: Connectivity
-paho-mqtt
