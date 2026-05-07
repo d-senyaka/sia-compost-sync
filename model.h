@@ -2534,3 +2534,28 @@ namespace Eloquent {
             }
         }
     }
+namespace Eloquent {
+    namespace Projects {
+        /**
+         * CompostClassifier wraps the generated RandomForest model and provides
+         * a predictLabel() method that maps class indices to human-readable labels.
+         * Labels correspond to compost states: Dry, Normal, Ready, Wet.
+         * Input features order: [Temperature, Humidity, Methane]
+         */
+        class CompostClassifier : public Eloquent::ML::Port::RandomForest {
+            public:
+                /**
+                 * Predict readable label for features vector
+                 */
+                const char* predictLabel(float *x) {
+                    switch (predict(x)) {
+                        case 0: return "Dry";
+                        case 1: return "Normal";
+                        case 2: return "Ready";
+                        case 3: return "Wet";
+                        default: return "Unknown";
+                    }
+                }
+        };
+    }
+}
