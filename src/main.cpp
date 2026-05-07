@@ -13,6 +13,7 @@
 #define DATA_TOPIC "sia/compost/data"
 #define COMMAND_TOPIC "sia/compost/commands"
 #define MQTT_RECONNECT_INTERVAL_MS 5000
+#define RESET_DELAY_MS 100
 
 #ifndef WIFI_SSID
 #define WIFI_SSID ""
@@ -58,7 +59,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
         Serial.println("Action: Force refresh scheduled.");
     } else if (command == "RESET") {
         Serial.println("Action: System reset requested.");
-        delay(100);
+        delay(RESET_DELAY_MS);
         ESP.restart();
     } else {
         Serial.print("Action: Unknown command '");
