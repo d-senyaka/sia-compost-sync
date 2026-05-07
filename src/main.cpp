@@ -7,11 +7,15 @@
 #define DHTPIN 4
 #define DHTTYPE DHT11
 #define MQ4_PIN 34
+#define SAMPLE_INTERVAL_MS 5000
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-DHT dht(4, DHT11);
+DHT dht(DHTPIN, DHTTYPE);
 Eloquent::Projects::CompostClassifier classifier;
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+unsigned long lastSampleAtMs = 0;
 
 void setup_wifi() {
     delay(10);
@@ -38,9 +42,6 @@ void reconnect() {
     }
 }
 
-// Create an instance of your classifier from model.h
-Eloquent::Projects::CompostClassifier classifier;
-
 void setup() {
     Serial.begin(115200);
     dht.begin();
@@ -49,6 +50,12 @@ void setup() {
 }
 
 void loop() {
+    unsigned long now = millis();
+    if (now - lastSampleAtMs < SAMPLE_INTERVAL_MS) {
+        return;
+    }
+    lastSampleAtMs = now;
+
     float h = dht.readHumidity();
     float t = dht.readTemperature();
     int m = analogRead(MQ4_PIN);
@@ -72,6 +79,4 @@ void loop() {
     
     // Print raw data too (useful for Phase 4 MQTT sync)
     Serial.printf("Data: T=%.2f, H=%.2f, M=%d\n", t, h, m);
-
-    delay(5000); // Check every 5 seconds
 }
