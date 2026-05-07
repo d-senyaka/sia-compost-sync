@@ -30,7 +30,7 @@ const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 unsigned long lastSampleAtMs = 0;
 unsigned long lastMqttReconnectAttemptMs = 0;
-bool forceRefreshRequested = false;
+volatile bool forceRefreshRequested = false;
 
 void setup_wifi() {
     delay(10);
