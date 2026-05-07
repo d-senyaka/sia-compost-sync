@@ -56,10 +56,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
     command.toUpperCase();
 
     if (command == "REFRESH") {
-        unsigned long now = millis();
-        unsigned long refreshTimestamp = now - SAMPLE_INTERVAL_MS;
         portENTER_CRITICAL(&sampleTimestampMux);
-        lastSampleAtMs = refreshTimestamp;
+        lastSampleAtMs = millis() - SAMPLE_INTERVAL_MS;
         portEXIT_CRITICAL(&sampleTimestampMux);
         Serial.println("Action: Force refresh scheduled.");
     } else if (command == "RESET") {

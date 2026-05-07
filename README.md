@@ -80,8 +80,8 @@ cd sia-compost-sync
 
 ```ini
 build_flags =
-  -DWIFI_SSID=\"your-wifi-name\"
-  -DWIFI_PASSWORD=\"your-wifi-password\"
+-DWIFI_SSID=\"your-wifi-name\"
+-DWIFI_PASSWORD=\"your-wifi-password\"
 ```
 
     If credentials are not set, the firmware still runs local sensing/inference but skips Wi-Fi/MQTT connection.
