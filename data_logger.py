@@ -8,6 +8,8 @@ import time
 SERIAL_PORT = 'COM3' 
 BAUD_RATE = 115200
 FILE_NAME = "compost_data.csv"
+FLUSH_EVERY_ROWS = 20
+FLUSH_INTERVAL_SECONDS = 2.0
 
 def main():
     try:
@@ -18,21 +20,34 @@ def main():
 
         with open(FILE_NAME, mode='a', newline='') as file:
             writer = csv.writer(file)
+            pending_rows = 0
+            last_flush = time.monotonic()
             
             # If the file is new, add the header
             # writer.writerow(["Temperature", "Humidity", "Methane", "Label"])
 
             while True:
-                if ser.in_waiting > 0:
-                    line = ser.readline().decode('utf-8').strip()
-                    if line:
-                        data = line.split(',')
-                        if len(data) == 3:  # Temp, Hum, Methane
-                            # For now, we will print it. 
-                            # Later we will add the "Label" manually.
-                            print(f"Received: {data}")
-                            writer.writerow(data)
-                            file.flush() # Save to disk immediately
+                raw = ser.readline()
+                if not raw:
+                    continue
+
+                line = raw.decode('utf-8', errors='ignore').strip()
+                if not line:
+                    continue
+
+                data = [value.strip() for value in line.split(',')]
+                if len(data) == 3:  # Temp, Hum, Methane
+                    # For now, we will print it.
+                    # Later we will add the "Label" manually.
+                    print(f"Received: {data}")
+                    writer.writerow(data)
+                    pending_rows += 1
+
+                now = time.monotonic()
+                if pending_rows >= FLUSH_EVERY_ROWS or (now - last_flush) >= FLUSH_INTERVAL_SECONDS:
+                    file.flush()
+                    pending_rows = 0
+                    last_flush = now
 
     except KeyboardInterrupt:
         print("\nLogging stopped by user.")
