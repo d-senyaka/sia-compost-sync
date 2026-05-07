@@ -10,15 +10,13 @@
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 ![Project Type](https://img.shields.io/badge/Project-Edge%20AI%20Implementation-brown)
 
-### 🧠 Meaning of the Name
-> *Sia* is derived from the ancient Egyptian personification of Perception, Insight, and Intelligence.  
-> *Sync* represents the seamless, bidirectional harmony between the physical edge and the digital cloud.
-
-> *Divine insight into organic transformation.*
 
 **Sia-Compost-Sync** is an intelligent Edge AI monitoring system that transforms organic waste management into a data-driven process.  
 It explores how local intelligence (TinyML) and multi-sensor fusion can be deployed on constrained microcontrollers to autonomously oversee biological decomposition, bridging the gap between raw earth and actionable digital insight.
 
+### 🧠 Meaning of the Name
+> *Sia* is derived from the ancient Egyptian personification of Perception, Insight, and Intelligence.  
+> *Sync* represents the seamless, bidirectional harmony between the physical edge and the digital cloud.
 ---
 
 ## 🧠 Overview
@@ -37,7 +35,7 @@ The system then extends to a fully bidirectional cloud architecture, allowing a 
 | **Edge Hardware** | ESP32 microcontroller fused with DHT11 (Climate) and MQ4 (Methane Gas) sensors. |
 | **TinyML Inference Engine** | A Custom Random Forest Classifier trained in Python and ported to C++ (`model.h`) for zero-latency, offline decision-making. |
 | **Bidirectional MQTT Sync** | Implements robust telemetry streaming and remote command subscription (e.g., Force Refresh, System Reset) via HiveMQ. |
-| **Streamlit Command Center** | A real-time web dashboard for data visualization, state monitoring, and remote hardware intervention. |
+| **HTML Command Center (GitHub Pages)** | A real-time web dashboard (`index.html`) for data visualization, state monitoring, and remote hardware intervention. |
 
 ---
 
@@ -46,18 +44,12 @@ The system then extends to a fully bidirectional cloud architecture, allowing a 
 ```text
 sia-compost-sync/
 │
-├── esp32_firmware/              # VS Code / PlatformIO Embedded Project
-│   ├── src/
-│   │   ├── main.cpp             # Core ESP32 logic (Sensor fusion, TinyML, MQTT)
-│   │   └── model.h              # Exported TinyML Random Forest C++ header
-│   └── platformio.ini           # Hardware configuration & library dependencies
-│
-├── python_edge/                 # IntelliJ Python Machine Learning Project
-│   ├── data/
-│   │   └── compost_data.csv     # Phase 1 empirical dataset (Normal, Wet, Dry, Ready)
-│   ├── train_model.py           # Phase 2 ML training, evaluation, & C++ export script
-│   ├── app.py                   # Phase 5 Streamlit dashboard & remote command center
-│   └── requirements.txt         # Python library dependencies
+├── src/
+│   └── main.cpp                 # Core ESP32 logic (Sensor fusion, TinyML, MQTT)
+├── train_model.py               # Phase 2 ML training, evaluation, & C++ export script
+├── compost_data.csv             # Phase 1 empirical dataset (Normal, Wet, Dry, Ready)
+├── requirements.txt             # Python dependencies for data + ML workflow
+├── index.html                   # Phase 5 static HTML dashboard (GitHub Pages)
 │
 └── README.md
 ```
@@ -74,7 +66,7 @@ cd sia-compost-sync
 
 ### 🔌 1. Hardware & Edge Deployment
 
-1.  **Environment Setup:** Open the `esp32_firmware` directory in **VS Code** with the **PlatformIO** extension installed.
+1.  **Environment Setup:** Open the repository root (`sia-compost-sync`) in **VS Code** with the **PlatformIO** extension installed.
 2.  **Wiring:** Connect your sensors to the ESP32 following this pinout:
     - **DHT11 (Data):** GPIO 4
     - **MQ4 (Analog Out):** GPIO 34
@@ -83,18 +75,32 @@ cd sia-compost-sync
 
 ### 💻 2. Dashboard & Cloud Sync Setup
 
-1.  Open the python_edge directory in IntelliJ or your terminal.
-2.  Create and activate a virtual Python environment:
+1.  For model-training scripts, create and activate a virtual Python environment:
 
 ```bash
 python -m venv venv
 source venv/bin/activate     # or .\venv\Scripts\activate on Windows
 ```
-3.  Install the necessary machine learning and UI dependencies:
+2.  Install the necessary machine learning dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
+
+3.  To collect raw sensor logs from serial into CSV:
+
+```bash
+python data_logger.py --port /dev/ttyUSB0
+# Windows example:
+# python data_logger.py --port COM3
+```
+
+The logger accepts both plain CSV serial lines (`temp,hum,methane`) and firmware-style lines (`Data: T=..., H=..., M=...`), and writes numeric rows to `compost_data.csv`.
+
+4.  For the dashboard, open `index.html` locally or deploy it with GitHub Pages:
+    - GitHub repository **Settings** → **Pages**
+    - **Source:** Deploy from a branch
+    - **Branch:** `main` (or your default branch), folder `/(root)`
 
 ---
 
@@ -122,9 +128,9 @@ Establishing the "Sync" through bidirectional communication.
 - **Process:** Implementing `PubSubClient` to stream JSON telemetry and subscribe to command topics.
 - **Broker:** HiveMQ Cloud (Public/Free tier).
 
-### 🎨 Phase 5 – Streamlit Dashboard
+### 🎨 Phase 5 – HTML Dashboard (GitHub Pages)
 The final Command Center for remote perception and intervention.
-- **Process:** Developing a web-based UI that listens to the MQTT stream.
+- **Process:** Developing a static HTML/CSS/JS UI that listens to the MQTT stream through WebSockets.
 - **Features:** Real-time metrics, line charts, and remote hardware trigger buttons.
 
 ---
@@ -156,10 +162,10 @@ The system was evaluated on its ability to correctly identify compost states in 
 
 ## 📁 Artifacts
 
-- **Dataset:** `python_edge/data/compost_data.csv` (Raw empirical data).
-- **Visualization:** `python_edge/plots/` (Cluster analysis and training curves).
-- **The Brain:** `esp32_firmware/src/model.h` (Optimized Random Forest C++ code).
-- **Firmware:** `esp32_firmware/src/main.cpp` (Production-ready inference & MQTT engine).
+- **Dataset:** `compost_data.csv` (Raw empirical data).
+- **Dashboard:** `index.html` (Static MQTT web UI for GitHub Pages).
+- **The Brain:** `model.h` (Optimized Random Forest C++ code generated by training).
+- **Firmware:** `src/main.cpp` (Production-ready inference & MQTT engine).
 
 ---
 
