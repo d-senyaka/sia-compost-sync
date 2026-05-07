@@ -10,7 +10,6 @@ BAUD_RATE = 115200
 FILE_NAME = "compost_data.csv"
 FLUSH_EVERY_ROWS = 20
 FLUSH_INTERVAL_SECONDS = 2.0
-READ_BACKOFF_SECONDS = 0.05
 
 def main():
     try:
@@ -30,7 +29,6 @@ def main():
             while True:
                 raw = ser.readline()
                 if not raw:
-                    time.sleep(READ_BACKOFF_SECONDS)
                     continue
 
                 line = raw.decode('utf-8', errors='ignore').strip()

@@ -27,6 +27,10 @@ unsigned long lastSampleAtMs = 0;
 
 void setup_wifi() {
     delay(10);
+    if (ssid[0] == '\0' || password[0] == '\0') {
+        Serial.println("WiFi credentials are not configured; skipping WiFi setup.");
+        return;
+    }
     Serial.println("\nConnecting to WiFi...");
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
@@ -59,7 +63,7 @@ void setup() {
 
 void loop() {
     unsigned long now = millis();
-    if (now - lastSampleAtMs < SAMPLE_INTERVAL_MS) {
+    if ((unsigned long)(now - lastSampleAtMs) < SAMPLE_INTERVAL_MS) {
         return;
     }
     lastSampleAtMs = now;

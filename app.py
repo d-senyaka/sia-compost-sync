@@ -11,6 +11,7 @@ import streamlit as st
 MQTT_BROKER = "broker.hivemq.com"
 DATA_TOPIC = "sia/compost/data"
 COMMAND_TOPIC = "sia/compost/commands"
+MAX_MESSAGES_PER_CYCLE = 100
 
 # --- STATE MANAGEMENT ---
 if "history" not in st.session_state:
@@ -50,7 +51,7 @@ else:
     client = st.session_state.mqtt_client
 
 processed = 0
-while processed < 100:
+while processed < MAX_MESSAGES_PER_CYCLE:
     try:
         item = st.session_state.message_queue.get_nowait()
     except queue.Empty:
