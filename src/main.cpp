@@ -30,7 +30,6 @@ const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 unsigned long lastSampleAtMs = 0;
 unsigned long lastMqttReconnectAttemptMs = 0;
-volatile bool forceRefreshRequested = false;
 
 void setup_wifi() {
     delay(10);
@@ -55,7 +54,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     command.toUpperCase();
 
     if (command == "REFRESH") {
-        forceRefreshRequested = true;
+        lastSampleAtMs = millis() - SAMPLE_INTERVAL_MS;
         Serial.println("Action: Force refresh scheduled.");
     } else if (command == "RESET") {
         Serial.println("Action: System reset requested.");
@@ -106,10 +105,9 @@ void loop() {
     }
 
     unsigned long sampleNow = millis();
-    if (!forceRefreshRequested && (unsigned long)(sampleNow - lastSampleAtMs) < SAMPLE_INTERVAL_MS) {
+    if ((unsigned long)(sampleNow - lastSampleAtMs) < SAMPLE_INTERVAL_MS) {
         return;
     }
-    forceRefreshRequested = false;
     lastSampleAtMs = sampleNow;
 
     float h = dht.readHumidity();
