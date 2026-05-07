@@ -8,6 +8,10 @@
 #define DHTTYPE DHT11
 #define MQ4_PIN 34
 #define SAMPLE_INTERVAL_MS 5000
+#define MQTT_BROKER "broker.hivemq.com"
+#define MQTT_PORT 1883
+#define DATA_TOPIC "sia/compost/data"
+#define COMMAND_TOPIC "sia/compost/commands"
 
 #ifndef WIFI_SSID
 #define WIFI_SSID ""
@@ -47,7 +51,7 @@ void reconnect() {
         Serial.print("Attempting MQTT connection...");
         if (client.connect("SiaCompostClient")) {
             Serial.println("connected");
-            client.subscribe("sia/compost/commands");
+            client.subscribe(COMMAND_TOPIC);
         } else {
             delay(5000);
         }
@@ -58,10 +62,20 @@ void setup() {
     Serial.begin(115200);
     dht.begin();
     pinMode(MQ4_PIN, INPUT);
+    setup_wifi();
+    client.setServer(MQTT_BROKER, MQTT_PORT);
+    client.setCallback(callback);
     Serial.println("Sia-Compost-Sync: Edge Inference Mode Active");
 }
 
 void loop() {
+    if (ssid[0] != '\0' && password[0] != '\0') {
+        if (!client.connected()) {
+            reconnect();
+        }
+        client.loop();
+    }
+
     unsigned long now = millis();
     if ((unsigned long)(now - lastSampleAtMs) < SAMPLE_INTERVAL_MS) {
         return;
@@ -91,4 +105,12 @@ void loop() {
     
     // Print raw data too (useful for Phase 4 MQTT sync)
     Serial.printf("Data: T=%.2f, H=%.2f, M=%d\n", t, h, m);
+
+    if (client.connected()) {
+        char payload[128];
+        snprintf(payload, sizeof(payload),
+                 "{\"temp\":%.2f,\"hum\":%.2f,\"methane\":%d,\"status\":\"%s\"}",
+                 t, h, m, prediction.c_str());
+        client.publish(DATA_TOPIC, payload);
+    }
 }
