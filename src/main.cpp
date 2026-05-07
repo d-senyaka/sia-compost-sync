@@ -9,12 +9,20 @@
 #define MQ4_PIN 34
 #define SAMPLE_INTERVAL_MS 5000
 
+#ifndef WIFI_SSID
+#define WIFI_SSID ""
+#endif
+
+#ifndef WIFI_PASSWORD
+#define WIFI_PASSWORD ""
+#endif
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 DHT dht(DHTPIN, DHTTYPE);
 Eloquent::Projects::CompostClassifier classifier;
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASSWORD;
 unsigned long lastSampleAtMs = 0;
 
 void setup_wifi() {
