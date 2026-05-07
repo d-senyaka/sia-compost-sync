@@ -1,6 +1,7 @@
 import serial
 import csv
 import time
+import os
 
 # --- CONFIGURATION ---
 # Change 'COM3' to your actual port (e.g., '/dev/ttyUSB0' on Mac/Linux)
@@ -20,7 +21,7 @@ def main():
         print(f"Connected to {SERIAL_PORT}. Logging to {FILE_NAME}...")
 
         with open(FILE_NAME, mode='a+', newline='') as file:
-            file.seek(0, 2)
+            file.seek(0, os.SEEK_END)
             file_is_new_or_empty = file.tell() == 0
             writer = csv.writer(file)
             pending_rows = 0
