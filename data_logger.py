@@ -1,6 +1,7 @@
 import serial
 import csv
 import time
+import os
 
 # --- CONFIGURATION ---
 # Change 'COM3' to your actual port (e.g., '/dev/ttyUSB0' on Mac/Linux)
@@ -19,13 +20,15 @@ def main():
         time.sleep(2)  # Wait for connection to stabilize
         print(f"Connected to {SERIAL_PORT}. Logging to {FILE_NAME}...")
 
+        file_is_new_or_empty = (not os.path.exists(FILE_NAME)) or os.path.getsize(FILE_NAME) == 0
+
         with open(FILE_NAME, mode='a', newline='') as file:
             writer = csv.writer(file)
             pending_rows = 0
             last_flush = time.monotonic()
             
             # If the file is new/empty, add the header expected by training scripts
-            if file.tell() == 0:
+            if file_is_new_or_empty:
                 writer.writerow(CSV_HEADER)
 
             while True:
