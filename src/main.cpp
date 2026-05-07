@@ -75,9 +75,9 @@ void setup() {
 void loop() {
     if (ssid[0] != '\0' && password[0] != '\0') {
         if (!client.connected()) {
-            unsigned long now = millis();
-            if ((unsigned long)(now - lastMqttReconnectAttemptMs) >= MQTT_RECONNECT_INTERVAL_MS) {
-                lastMqttReconnectAttemptMs = now;
+            unsigned long mqttNow = millis();
+            if ((unsigned long)(mqttNow - lastMqttReconnectAttemptMs) >= MQTT_RECONNECT_INTERVAL_MS) {
+                lastMqttReconnectAttemptMs = mqttNow;
                 reconnect();
             }
         } else {

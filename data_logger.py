@@ -17,7 +17,7 @@ CSV_HEADER = ["Temperature", "Humidity", "Methane"]  # Raw logging only; labels 
 
 def parse_sensor_line(line: str):
     payload = line
-    if line.lower().startswith("data:"):
+    if line.startswith("Data:"):
         payload = line.split(":", 1)[1].strip()
 
     parts = [part.strip() for part in payload.split(",")]
@@ -35,7 +35,10 @@ def parse_sensor_line(line: str):
     try:
         temperature = float(values[0])
         humidity = float(values[1])
-        methane = int(float(values[2]))
+        try:
+            methane = int(values[2])
+        except ValueError:
+            methane = int(float(values[2]))
     except ValueError:
         return None
 
