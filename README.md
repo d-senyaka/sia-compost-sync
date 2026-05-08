@@ -83,12 +83,13 @@ build_flags =
      -DWIFI_SSID=\"your-wifi-name\"
      -DWIFI_PASSWORD=\"your-wifi-password\"
      -DCOMMAND_TOKEN=\"your-secret-token\"   ; optional but strongly recommended
-     -DMQTT_USE_TLS=1                         ; optional (default is enabled)
+     -DMQTT_USE_TLS=1                         ; default is enabled
 ```
 
     If SSID is not set, the firmware still runs local sensing/inference but skips Wi-Fi/MQTT connection.
     If SSID is set and password is empty, firmware attempts open-network Wi-Fi.
     If Wi-Fi credentials are set but connection fails, firmware times out and continues in local edge-only mode.
+    For TLS certificate validation, set `MQTT_CA_CERT` (PEM CA cert string) as a build flag; if omitted, firmware uses encrypted TLS transport without CA verification.
 4.  **Deployment:** Connect the ESP32 to your computer via USB, then **Build** and **Upload** the firmware.
 
 ### 💻 2. Dashboard & Cloud Sync Setup

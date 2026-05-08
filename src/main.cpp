@@ -41,6 +41,10 @@
 #define COMMAND_TOKEN ""
 #endif
 
+#ifndef MQTT_CA_CERT
+#define MQTT_CA_CERT ""
+#endif
+
 #if MQTT_USE_TLS
 WiFiClientSecure espClient;
 #else
@@ -52,6 +56,7 @@ Eloquent::Projects::CompostClassifier classifier;
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 const char* commandToken = COMMAND_TOKEN;
+const char* mqttCaCert = MQTT_CA_CERT;
 String deviceId;
 unsigned long lastSampleAtMs = 0;
 unsigned long lastMqttReconnectAttemptMs = 0;
@@ -149,7 +154,13 @@ void setup() {
     pinMode(MQ4_PIN, INPUT);
     setup_wifi();
 #if MQTT_USE_TLS
-    espClient.setInsecure();
+    if (mqttCaCert[0] != '\0') {
+        espClient.setCACert(mqttCaCert);
+        Serial.println("MQTT TLS certificate validation: enabled");
+    } else {
+        espClient.setInsecure();
+        Serial.println("MQTT TLS certificate validation: disabled (set MQTT_CA_CERT build flag to enable)");
+    }
 #endif
     client.setServer(MQTT_BROKER, MQTT_PORT);
     client.setCallback(callback);
