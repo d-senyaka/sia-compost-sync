@@ -80,13 +80,16 @@ cd sia-compost-sync
 
 ```ini
 build_flags =
--DWIFI_SSID=\"your-wifi-name\"
--DWIFI_PASSWORD=\"your-wifi-password\"
--DCOMMAND_TOKEN=\"your-secret-token\"   ; optional but strongly recommended
+     -DWIFI_SSID=\"your-wifi-name\"
+     -DWIFI_PASSWORD=\"your-wifi-password\"
+     -DCOMMAND_TOKEN=\"your-secret-token\"   ; optional but strongly recommended
+     -DMQTT_USE_TLS=1                         ; default is enabled
 ```
 
-    If credentials are not set, the firmware still runs local sensing/inference but skips Wi-Fi/MQTT connection.
+    If SSID is not set, the firmware still runs local sensing/inference but skips Wi-Fi/MQTT connection.
+    If SSID is set and password is empty, firmware attempts open-network Wi-Fi.
     If Wi-Fi credentials are set but connection fails, firmware times out and continues in local edge-only mode.
+    For TLS certificate validation, set `MQTT_CA_CERT` (PEM CA cert string) as a build flag; if omitted, firmware uses encrypted TLS transport without CA verification.
 4.  **Deployment:** Connect the ESP32 to your computer via USB, then **Build** and **Upload** the firmware.
 
 ### 💻 2. Dashboard & Cloud Sync Setup
@@ -137,7 +140,7 @@ Systematic empirical data collection was performed to build the "Ground Truth" f
 
 ### 🧠 Phase 2 – Model Training & Conversion
 The intelligence layer was forged in a Python environment using a Random Forest architecture.
-- **Process:** Data cleaning, feature scaling, and hyperparameter tuning.
+- **Process:** Data inspection, model training, and evaluation on labeled compost data.
 - **TinyML Export:** The model was ported to C++ code using `micromlgen` to fit the ESP32’s memory footprint.
 
 ### ⚡ Phase 3 – TinyML Deployment
@@ -148,7 +151,7 @@ The "Brain" was transplanted into the microcontroller to enable offline inferenc
 ### ☁️ Phase 4 – MQTT Connectivity & Sync
 Establishing the "Sync" through bidirectional communication.
 - **Process:** Implementing `PubSubClient` to stream JSON telemetry and subscribe to command topics.
-- **Broker:** HiveMQ public broker (`broker.hivemq.com`) over TCP for firmware and WebSocket for dashboard.
+- **Broker:** HiveMQ public broker (`broker.hivemq.com`) over TLS (`8883`) for firmware and WebSocket Secure for dashboard.
 - **Commands:** Dashboard can publish `REFRESH` (force immediate sample/inference) and `RESET` (remote restart) to a per-device command topic: `sia/compost/commands/<device-id>`.
 - **Hardening:** Optional command token verification (`COMMAND_TOKEN`) can be enabled in firmware and matched in dashboard input.
 
