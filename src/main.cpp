@@ -1,7 +1,12 @@
 #include <Arduino.h>
 #include <cinttypes>
 #include <WiFi.h>
-#if !defined(MQTT_USE_TLS) || MQTT_USE_TLS
+
+#ifndef MQTT_USE_TLS
+#define MQTT_USE_TLS 1
+#endif
+
+#if MQTT_USE_TLS
 #include <WiFiClientSecure.h>
 #endif
 #include <PubSubClient.h>
@@ -14,9 +19,6 @@
 #define SAMPLE_INTERVAL_MS 5000
 #ifndef WIFI_CONNECT_TIMEOUT_MS
 #define WIFI_CONNECT_TIMEOUT_MS 15000UL
-#endif
-#ifndef MQTT_USE_TLS
-#define MQTT_USE_TLS 1
 #endif
 #define MQTT_BROKER "broker.hivemq.com"
 #if MQTT_USE_TLS
@@ -159,7 +161,7 @@ void setup() {
         Serial.println("MQTT TLS certificate validation: enabled");
     } else {
         espClient.setInsecure();
-        Serial.println("MQTT TLS certificate validation: disabled (set MQTT_CA_CERT build flag to enable)");
+        Serial.println("MQTT TLS certificate validation: disabled (set MQTT_CA_CERT to PEM CA certificate string to enable)");
     }
 #endif
     client.setServer(MQTT_BROKER, MQTT_PORT);
