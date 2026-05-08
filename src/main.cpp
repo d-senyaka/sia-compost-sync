@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <cinttypes>
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <DHT.h>
@@ -8,7 +9,9 @@
 #define DHTTYPE DHT11
 #define MQ4_PIN 34
 #define SAMPLE_INTERVAL_MS 5000
-#define WIFI_CONNECT_TIMEOUT_MS 15000
+#ifndef WIFI_CONNECT_TIMEOUT_MS
+#define WIFI_CONNECT_TIMEOUT_MS 15000UL
+#endif
 #define MQTT_BROKER "broker.hivemq.com"
 #define MQTT_PORT 1883
 #define DATA_TOPIC "sia/compost/data"
@@ -43,7 +46,7 @@ portMUX_TYPE sampleTimestampMux = portMUX_INITIALIZER_UNLOCKED;
 String getDeviceId() {
     uint64_t chipId = ESP.getEfuseMac();
     char idBuffer[13];
-    snprintf(idBuffer, sizeof(idBuffer), "%012llx", (unsigned long long) chipId);
+    snprintf(idBuffer, sizeof(idBuffer), "%012" PRIx64, chipId);
     return String(idBuffer);
 }
 

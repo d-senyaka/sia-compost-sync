@@ -63,6 +63,7 @@
     const WS_URL = "wss://broker.hivemq.com:8884/mqtt";
     const DATA_TOPIC = "sia/compost/data";
     const COMMAND_TOPIC_PREFIX = "sia/compost/commands/";
+    const DEVICE_ID_PATTERN = /^[0-9a-f]{12}$/;
     const MAX_POINTS = 20;
 
     const params = new URLSearchParams(window.location.search);
@@ -107,7 +108,7 @@
     }
 
     function hasValidDeviceId() {
-      return /^[0-9a-f]{12}$/.test(deviceIdInput.value.trim().toLowerCase());
+      return DEVICE_ID_PATTERN.test(deviceIdInput.value.trim().toLowerCase());
     }
 
     function updateCommandTopicView() {

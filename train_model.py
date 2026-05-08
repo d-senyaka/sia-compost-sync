@@ -10,6 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, accuracy_score
 
 def parse_args():
+    """Parse command-line arguments for dataset, outputs, and plotting behavior."""
     parser = argparse.ArgumentParser(description="Train compost classifier and export model.h")
     parser.add_argument("--data", default="compost_data.csv", help="Path to labeled CSV dataset")
     parser.add_argument("--output-model", default="model.h", help="Output path for generated C++ header")
@@ -18,6 +19,7 @@ def parse_args():
     return parser.parse_args()
 
 def main():
+    """Run the training pipeline, save visualization, evaluate model, and export C++ header."""
     args = parse_args()
     for output_path in (args.plot_output, args.output_model):
         output_dir = Path(output_path).expanduser().resolve().parent
