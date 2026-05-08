@@ -108,6 +108,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
     command.trim();
 
+    // Validate and strip token before command case-normalization, since tokens may be case-sensitive.
     if (commandToken[0] != '\0') {
         String tokenPrefix = String(commandToken) + ":";
         if (!command.startsWith(tokenPrefix)) {
@@ -161,7 +162,7 @@ void setup() {
         Serial.println("MQTT TLS certificate validation: enabled");
     } else {
         espClient.setInsecure();
-        Serial.println("MQTT TLS certificate validation: disabled (set MQTT_CA_CERT to PEM CA certificate string to enable)");
+        Serial.println("MQTT TLS certificate validation: disabled. Set MQTT_CA_CERT to PEM CA certificate string to enable.");
     }
 #endif
     client.setServer(MQTT_BROKER, MQTT_PORT);
