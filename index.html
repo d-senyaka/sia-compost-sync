@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sia-Compost-Sync Dashboard</title>
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/mqtt@5.10.4/dist/mqtt.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -34,7 +34,7 @@
 <body>
   <div class="container">
     <h1>🌿 Sia-Compost-Sync Dashboard</h1>
-    <p class="muted">MQTT topic: <code>sia/compost/data</code> | Commands: <code id="commandTopicView">sia/compost/commands/&lt;device-id&gt;</code></p>
+    <p class="muted">MQTT data topic: <code id="dataTopicView">sia/compost/data/&lt;device-id&gt;</code> | Commands: <code id="commandTopicView">sia/compost/commands/&lt;device-id&gt;</code></p>
     <p>Connection: <span id="statusPill">Connecting...</span></p>
 
     <div class="grid">
@@ -61,7 +61,7 @@
 
   <script>
     const WS_URL = "wss://broker.hivemq.com:8884/mqtt";
-    const DATA_TOPIC = "sia/compost/data";
+    const DATA_TOPIC_PREFIX = "sia/compost/data/";
     const COMMAND_TOPIC_PREFIX = "sia/compost/commands/";
     const DEVICE_ID_PATTERN = /^[0-9a-f]{12}$/;
     const MAX_POINTS = 20;
@@ -71,6 +71,7 @@
     const initialToken = "";
     localStorage.removeItem("sia_command_token");
 
+    const dataTopicView = document.getElementById("dataTopicView");
     const deviceIdInput = document.getElementById("deviceIdInput");
     const commandTokenInput = document.getElementById("commandTokenInput");
     const commandTopicView = document.getElementById("commandTopicView");
@@ -103,6 +104,11 @@
     const methaneEl = document.getElementById("methane");
     const stateEl = document.getElementById("state");
 
+    function getDataTopic() {
+      const deviceId = deviceIdInput.value.trim().toLowerCase();
+      return deviceId ? `${DATA_TOPIC_PREFIX}${deviceId}` : "";
+    }
+
     function getCommandTopic() {
       const deviceId = deviceIdInput.value.trim().toLowerCase();
       return deviceId ? `${COMMAND_TOPIC_PREFIX}${deviceId}` : "";
@@ -122,6 +128,7 @@
     }
 
     function updateCommandTopicView() {
+      dataTopicView.textContent = getDataTopic() || `${DATA_TOPIC_PREFIX}<device-id>`;
       commandTopicView.textContent = getCommandTopic() || `${COMMAND_TOPIC_PREFIX}<device-id>`;
     }
 
@@ -132,9 +139,24 @@
 
     updateCommandTopicView();
 
+    let currentDataTopic = getDataTopic();
+
+    function resubscribeDataTopic() {
+      const newTopic = getDataTopic();
+      if (newTopic === currentDataTopic) return;
+      if (currentDataTopic && client.connected) {
+        client.unsubscribe(currentDataTopic);
+      }
+      currentDataTopic = newTopic;
+      if (newTopic && client.connected) {
+        client.subscribe(newTopic);
+      }
+    }
+
     deviceIdInput.addEventListener("input", () => {
       updateCommandTopicView();
       localStorage.setItem("sia_device_id", deviceIdInput.value.trim().toLowerCase());
+      resubscribeDataTopic();
     });
 
     function pushPoint(temp, hum) {
@@ -154,7 +176,9 @@
     client.on("connect", () => {
       statusPill.textContent = "Connected";
       statusPill.style.color = "#22c55e";
-      client.subscribe(DATA_TOPIC);
+      if (currentDataTopic) {
+        client.subscribe(currentDataTopic);
+      }
     });
 
     client.on("reconnect", () => {

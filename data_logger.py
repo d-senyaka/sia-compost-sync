@@ -98,8 +98,10 @@ def main():
 
     except KeyboardInterrupt:
         print("\nLogging stopped by user.")
-    except Exception as e:
-        print(f"Error: {e}")
+    except serial.SerialException as e:
+        print(f"Serial port error: {e}")
+    except OSError as e:
+        print(f"File I/O error: {e}")
     finally:
         if 'ser' in locals():
             ser.close()

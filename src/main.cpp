@@ -26,7 +26,7 @@
 #else
 #define MQTT_PORT 1883
 #endif
-#define DATA_TOPIC "sia/compost/data"
+#define DATA_TOPIC_PREFIX "sia/compost/data/"
 #define COMMAND_TOPIC_PREFIX "sia/compost/commands/"
 #define MQTT_RECONNECT_INTERVAL_MS 5000
 #define RESET_DELAY_MS 100  // Brief pause so reset message can flush on Serial
@@ -63,6 +63,7 @@ String deviceId;
 unsigned long lastSampleAtMs = 0;
 unsigned long lastMqttReconnectAttemptMs = 0;
 String commandTopic;
+String dataTopic;
 portMUX_TYPE sampleTimestampMux = portMUX_INITIALIZER_UNLOCKED;
 
 String getDeviceId() {
@@ -162,19 +163,22 @@ void setup() {
         Serial.println("MQTT TLS certificate validation: enabled");
     } else {
         espClient.setInsecure();
-        Serial.println("MQTT TLS certificate validation: disabled. Set MQTT_CA_CERT to PEM CA certificate string to enable.");
+        Serial.println("WARNING: MQTT TLS certificate validation is disabled (MITM risk). Set MQTT_CA_CERT to a PEM CA certificate string to enable server verification.");
     }
 #endif
     client.setServer(MQTT_BROKER, MQTT_PORT);
     client.setCallback(callback);
     deviceId = getDeviceId();
     commandTopic = String(COMMAND_TOPIC_PREFIX) + deviceId;
+    dataTopic = String(DATA_TOPIC_PREFIX) + deviceId;
+    Serial.print("Data topic: ");
+    Serial.println(dataTopic);
     Serial.print("Command topic: ");
     Serial.println(commandTopic);
     if (commandToken[0] != '\0') {
         Serial.println("Command token protection: enabled");
     } else {
-        Serial.println("Command token protection: disabled (set COMMAND_TOKEN build flag to enable)");
+        Serial.println("WARNING: Command token protection is disabled. Anyone who knows the command topic can send RESET/REFRESH. Set COMMAND_TOKEN build flag to enable.");
     }
 #if MQTT_USE_TLS
     Serial.println("MQTT transport: TLS enabled");
@@ -239,6 +243,6 @@ void loop() {
         snprintf(payload, sizeof(payload),
                  "{\"temp\":%.2f,\"hum\":%.2f,\"methane\":%d,\"status\":\"%s\"}",
                  t, h, m, prediction.c_str());
-        client.publish(DATA_TOPIC, payload);
+        client.publish(dataTopic.c_str(), payload);
     }
 }
