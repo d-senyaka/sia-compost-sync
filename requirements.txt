@@ -2,11 +2,11 @@
 # This file contains Python libraries for data acquisition and model training.
 
 # Phase 1 & 2: Data Logging and ML Training
-pyserial
-pandas
-scikit-learn
-matplotlib
-seaborn
+pyserial==3.5
+pandas==2.2.2
+scikit-learn==1.5.1
+matplotlib==3.9.0
+seaborn==0.13.2
 
 # Phase 2: TinyML Conversion
-micromlgen
+micromlgen==1.1.28

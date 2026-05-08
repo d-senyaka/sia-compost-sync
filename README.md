@@ -66,7 +66,7 @@ sia-compost-sync/
 
 ```bash
 # Clone the repository
-git clone [https://github.com/](https://github.com/)<your-username>/sia-compost-sync.git
+git clone https://github.com/<your-username>/sia-compost-sync.git
 cd sia-compost-sync
 ```
 
@@ -82,9 +82,11 @@ cd sia-compost-sync
 build_flags =
 -DWIFI_SSID=\"your-wifi-name\"
 -DWIFI_PASSWORD=\"your-wifi-password\"
+-DCOMMAND_TOKEN=\"your-secret-token\"   ; optional but strongly recommended
 ```
 
     If credentials are not set, the firmware still runs local sensing/inference but skips Wi-Fi/MQTT connection.
+    If Wi-Fi credentials are set but connection fails, firmware times out and continues in local edge-only mode.
 4.  **Deployment:** Connect the ESP32 to your computer via USB, then **Build** and **Upload** the firmware.
 
 ### 💻 2. Dashboard & Cloud Sync Setup
@@ -112,11 +114,15 @@ python data_logger.py --port /dev/ttyUSB0
 The logger accepts both plain CSV serial lines (`temp,hum,methane`) and firmware-style lines (`Data: T=..., H=..., M=...`), and writes numeric rows to `raw_sensor_data.csv` by default.
 Use `--output` if you want a custom file path.
 For model training, use a curated labeled dataset (default in this repo: `compost_data.csv` with `Label` column).
+By default, `train_model.py` saves the scatter plot to `training_scatter.png` without opening a GUI window.
+Use `--show-plot` only when interactive plotting is needed.
 
 4.  For the dashboard, open `index.html` locally or deploy it with GitHub Pages:
     - GitHub repository **Settings** → **Pages**
     - **Source:** Deploy from a branch
     - **Branch:** `main` (or your default branch), folder `/(root)`
+    - Enter your device ID suffix shown by firmware (e.g., `1a2b3c4d`) in the dashboard command field.
+    - If firmware `COMMAND_TOKEN` is configured, enter the same token in the dashboard before sending commands.
 
 ---
 
@@ -143,7 +149,8 @@ The "Brain" was transplanted into the microcontroller to enable offline inferenc
 Establishing the "Sync" through bidirectional communication.
 - **Process:** Implementing `PubSubClient` to stream JSON telemetry and subscribe to command topics.
 - **Broker:** HiveMQ public broker (`broker.hivemq.com`) over TCP for firmware and WebSocket for dashboard.
-- **Commands:** Dashboard can publish `REFRESH` (force immediate sample/inference) and `RESET` (remote restart).
+- **Commands:** Dashboard can publish `REFRESH` (force immediate sample/inference) and `RESET` (remote restart) to a per-device command topic: `sia/compost/commands/<device-id>`.
+- **Hardening:** Optional command token verification (`COMMAND_TOKEN`) can be enabled in firmware and matched in dashboard input.
 
 ### 🎨 Phase 5 – HTML Dashboard (GitHub Pages)
 The final Command Center for remote perception and intervention.

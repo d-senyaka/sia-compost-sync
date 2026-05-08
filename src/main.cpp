@@ -8,10 +8,11 @@
 #define DHTTYPE DHT11
 #define MQ4_PIN 34
 #define SAMPLE_INTERVAL_MS 5000
+#define WIFI_CONNECT_TIMEOUT_MS 15000
 #define MQTT_BROKER "broker.hivemq.com"
 #define MQTT_PORT 1883
 #define DATA_TOPIC "sia/compost/data"
-#define COMMAND_TOPIC "sia/compost/commands"
+#define COMMAND_TOPIC_PREFIX "sia/compost/commands/"
 #define MQTT_RECONNECT_INTERVAL_MS 5000
 #define RESET_DELAY_MS 100  // Brief pause so reset message can flush on Serial
 
@@ -23,14 +24,20 @@
 #define WIFI_PASSWORD ""
 #endif
 
+#ifndef COMMAND_TOKEN
+#define COMMAND_TOKEN ""
+#endif
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 DHT dht(DHTPIN, DHTTYPE);
 Eloquent::Projects::CompostClassifier classifier;
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
+const char* commandToken = COMMAND_TOKEN;
 unsigned long lastSampleAtMs = 0;
 unsigned long lastMqttReconnectAttemptMs = 0;
+String commandTopic;
 portMUX_TYPE sampleTimestampMux = portMUX_INITIALIZER_UNLOCKED;
 
 void setup_wifi() {
@@ -41,8 +48,19 @@ void setup_wifi() {
     }
     Serial.println("\nConnecting to WiFi...");
     WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
-    Serial.println("\nWiFi connected. IP: "); Serial.println(WiFi.localIP());
+    unsigned long connectStartedAt = millis();
+    while (WiFi.status() != WL_CONNECTED && (unsigned long)(millis() - connectStartedAt) < WIFI_CONNECT_TIMEOUT_MS) {
+        delay(500);
+        Serial.print(".");
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\nWiFi connected. IP: ");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("\nWiFi connection timeout. Continuing in local edge-only mode.");
+        WiFi.disconnect(true);
+    }
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -54,6 +72,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
     command.trim();
     command.toUpperCase();
+
+    if (commandToken[0] != '\0') {
+        String tokenPrefix = String(commandToken) + ":";
+        if (!command.startsWith(tokenPrefix)) {
+            Serial.println("Action: Unauthorized command rejected (missing/invalid token).");
+            return;
+        }
+        command = command.substring(tokenPrefix.length());
+        command.trim();
+    }
 
     if (command == "REFRESH") {
         unsigned long refreshTimestamp = millis() - SAMPLE_INTERVAL_MS;
@@ -79,7 +107,7 @@ void reconnect() {
 
     if (client.connect(clientId.c_str())) {
         Serial.println("connected");
-        client.subscribe(COMMAND_TOPIC);
+        client.subscribe(commandTopic.c_str());
     } else {
         Serial.print("failed, rc=");
         Serial.println(client.state());
@@ -93,6 +121,15 @@ void setup() {
     setup_wifi();
     client.setServer(MQTT_BROKER, MQTT_PORT);
     client.setCallback(callback);
+    String deviceId = String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFFFF), HEX);
+    commandTopic = String(COMMAND_TOPIC_PREFIX) + deviceId;
+    Serial.print("Command topic: ");
+    Serial.println(commandTopic);
+    if (commandToken[0] != '\0') {
+        Serial.println("Command token protection: enabled");
+    } else {
+        Serial.println("Command token protection: disabled (set COMMAND_TOKEN build flag to enable)");
+    }
     Serial.println("Sia-Compost-Sync: Edge Inference Mode Active");
 }
 
