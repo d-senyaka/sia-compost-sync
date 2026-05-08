@@ -38,6 +38,7 @@ Eloquent::Projects::CompostClassifier classifier;
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 const char* commandToken = COMMAND_TOKEN;
+String deviceId;
 unsigned long lastSampleAtMs = 0;
 unsigned long lastMqttReconnectAttemptMs = 0;
 String commandTopic;
@@ -59,7 +60,7 @@ void setup_wifi() {
     Serial.println("\nConnecting to WiFi...");
     WiFi.begin(ssid, password);
     unsigned long connectStartedAt = millis();
-    while (WiFi.status() != WL_CONNECTED && (unsigned long)(millis() - connectStartedAt) < WIFI_CONNECT_TIMEOUT_MS) {
+    while (WiFi.status() != WL_CONNECTED && (millis() - connectStartedAt) < WIFI_CONNECT_TIMEOUT_MS) {
         delay(500);
         Serial.print(".");
     }
@@ -113,7 +114,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void reconnect() {
     Serial.print("Attempting MQTT connection...");
     String clientId = "SiaCompostClient-";
-    clientId += getDeviceId();
+    clientId += deviceId;
 
     if (client.connect(clientId.c_str())) {
         Serial.println("connected");
@@ -131,7 +132,7 @@ void setup() {
     setup_wifi();
     client.setServer(MQTT_BROKER, MQTT_PORT);
     client.setCallback(callback);
-    String deviceId = getDeviceId();
+    deviceId = getDeviceId();
     commandTopic = String(COMMAND_TOPIC_PREFIX) + deviceId;
     Serial.print("Command topic: ");
     Serial.println(commandTopic);

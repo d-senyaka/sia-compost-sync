@@ -21,9 +21,11 @@ def parse_args():
 def main():
     """Run the training pipeline, save visualization, evaluate model, and export C++ header."""
     args = parse_args()
+    cwd = Path.cwd().resolve()
     for output_path in (args.plot_output, args.output_model):
         output_dir = Path(output_path).expanduser().resolve().parent
-        os.makedirs(output_dir, exist_ok=True)
+        if output_dir != cwd:
+            os.makedirs(output_dir, exist_ok=True)
 
     # 1. Load the dataset
     df = pd.read_csv(args.data)

@@ -68,7 +68,7 @@
 
     const params = new URLSearchParams(window.location.search);
     const initialDeviceId = (params.get("device") || localStorage.getItem("sia_device_id") || "").trim().toLowerCase();
-    const initialToken = (params.get("token") || localStorage.getItem("sia_command_token") || "").trim();
+    const initialToken = (localStorage.getItem("sia_command_token") || "").trim();
 
     const deviceIdInput = document.getElementById("deviceIdInput");
     const commandTokenInput = document.getElementById("commandTokenInput");
@@ -109,6 +109,15 @@
 
     function hasValidDeviceId() {
       return DEVICE_ID_PATTERN.test(deviceIdInput.value.trim().toLowerCase());
+    }
+
+    function requireValidCommandTopic() {
+      const commandTopic = getCommandTopic();
+      if (!commandTopic || !hasValidDeviceId()) {
+        alert("Please enter a valid 12-character hex device ID suffix before sending commands.");
+        return null;
+      }
+      return commandTopic;
     }
 
     function updateCommandTopicView() {
@@ -181,18 +190,16 @@
     });
 
     document.getElementById("refreshBtn").addEventListener("click", () => {
-      const commandTopic = getCommandTopic();
-      if (!commandTopic || !hasValidDeviceId()) {
-        alert("Please enter a valid 12-character hex device ID suffix before sending commands.");
+      const commandTopic = requireValidCommandTopic();
+      if (!commandTopic) {
         return;
       }
       client.publish(commandTopic, buildCommandPayload("REFRESH"));
     });
 
     document.getElementById("resetBtn").addEventListener("click", () => {
-      const commandTopic = getCommandTopic();
-      if (!commandTopic || !hasValidDeviceId()) {
-        alert("Please enter a valid 12-character hex device ID suffix before sending commands.");
+      const commandTopic = requireValidCommandTopic();
+      if (!commandTopic) {
         return;
       }
       client.publish(commandTopic, buildCommandPayload("RESET"));
