@@ -9,7 +9,7 @@ import serial
 # Set via --port or SIA_SERIAL_PORT (e.g., /dev/ttyUSB0 on macOS/Linux)
 SERIAL_PORT = os.getenv("SIA_SERIAL_PORT", "COM3")
 BAUD_RATE = 115200
-FILE_NAME = "compost_data.csv"
+FILE_NAME = "raw_sensor_data.csv"
 FLUSH_EVERY_ROWS = 20
 FLUSH_INTERVAL_SECONDS = 2.0
 CSV_HEADER = ["Temperature", "Humidity", "Methane"]  # Raw logging only; labels are added later for model-training datasets
