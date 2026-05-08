@@ -5,3 +5,5 @@
 .vscode/ipch
 __pycache__/
 *.py[cod]
+raw_sensor_data.csv
+training_scatter.png
