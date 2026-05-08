@@ -1,5 +1,6 @@
 import argparse
 import os
+from pathlib import Path
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -19,9 +20,8 @@ def parse_args():
 def main():
     args = parse_args()
     for output_path in (args.plot_output, args.output_model):
-        parent_dir = os.path.dirname(output_path)
-        if parent_dir:
-            os.makedirs(parent_dir, exist_ok=True)
+        output_dir = Path(output_path).expanduser().resolve().parent
+        os.makedirs(output_dir, exist_ok=True)
 
     # 1. Load the dataset
     df = pd.read_csv(args.data)

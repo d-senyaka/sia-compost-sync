@@ -121,7 +121,7 @@ Use `--show-plot` only when interactive plotting is needed.
     - GitHub repository **Settings** → **Pages**
     - **Source:** Deploy from a branch
     - **Branch:** `main` (or your default branch), folder `/(root)`
-    - Enter your device ID suffix shown by firmware (e.g., `1a2b3c4d`) in the dashboard command field.
+    - Enter your device ID suffix shown by firmware (12-hex, e.g., `a1b2c3d4e5f6`) in the dashboard command field.
     - If firmware `COMMAND_TOKEN` is configured, enter the same token in the dashboard before sending commands.
 
 ---

@@ -45,7 +45,7 @@
     </div>
 
     <div class="controls">
-      <input id="deviceIdInput" placeholder="Device ID suffix (e.g. 1a2b3c4d)" />
+      <input id="deviceIdInput" placeholder="Device ID suffix (12-hex, e.g. a1b2c3d4e5f6)" />
       <input id="commandTokenInput" type="password" placeholder="Optional command token" />
     </div>
 
@@ -104,6 +104,10 @@
     function getCommandTopic() {
       const deviceId = deviceIdInput.value.trim().toLowerCase();
       return deviceId ? `${COMMAND_TOPIC_PREFIX}${deviceId}` : "";
+    }
+
+    function hasValidDeviceId() {
+      return /^[0-9a-f]{12}$/.test(deviceIdInput.value.trim().toLowerCase());
     }
 
     function updateCommandTopicView() {
@@ -177,8 +181,8 @@
 
     document.getElementById("refreshBtn").addEventListener("click", () => {
       const commandTopic = getCommandTopic();
-      if (!commandTopic) {
-        alert("Please enter your device ID suffix before sending commands.");
+      if (!commandTopic || !hasValidDeviceId()) {
+        alert("Please enter a valid 12-character hex device ID suffix before sending commands.");
         return;
       }
       client.publish(commandTopic, buildCommandPayload("REFRESH"));
@@ -186,8 +190,8 @@
 
     document.getElementById("resetBtn").addEventListener("click", () => {
       const commandTopic = getCommandTopic();
-      if (!commandTopic) {
-        alert("Please enter your device ID suffix before sending commands.");
+      if (!commandTopic || !hasValidDeviceId()) {
+        alert("Please enter a valid 12-character hex device ID suffix before sending commands.");
         return;
       }
       client.publish(commandTopic, buildCommandPayload("RESET"));

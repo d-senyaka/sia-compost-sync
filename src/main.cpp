@@ -40,6 +40,13 @@ unsigned long lastMqttReconnectAttemptMs = 0;
 String commandTopic;
 portMUX_TYPE sampleTimestampMux = portMUX_INITIALIZER_UNLOCKED;
 
+String getDeviceId() {
+    uint64_t chipId = ESP.getEfuseMac();
+    char idBuffer[13];
+    snprintf(idBuffer, sizeof(idBuffer), "%012llx", (unsigned long long) chipId);
+    return String(idBuffer);
+}
+
 void setup_wifi() {
     delay(10);
     if (ssid[0] == '\0' || password[0] == '\0') {
@@ -103,7 +110,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void reconnect() {
     Serial.print("Attempting MQTT connection...");
     String clientId = "SiaCompostClient-";
-    clientId += String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFFFF), HEX);
+    clientId += getDeviceId();
 
     if (client.connect(clientId.c_str())) {
         Serial.println("connected");
@@ -121,7 +128,7 @@ void setup() {
     setup_wifi();
     client.setServer(MQTT_BROKER, MQTT_PORT);
     client.setCallback(callback);
-    String deviceId = String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFFFF), HEX);
+    String deviceId = getDeviceId();
     commandTopic = String(COMMAND_TOPIC_PREFIX) + deviceId;
     Serial.print("Command topic: ");
     Serial.println(commandTopic);
