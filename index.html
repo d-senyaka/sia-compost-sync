@@ -68,7 +68,8 @@
 
     const params = new URLSearchParams(window.location.search);
     const initialDeviceId = (params.get("device") || localStorage.getItem("sia_device_id") || "").trim().toLowerCase();
-    const initialToken = (localStorage.getItem("sia_command_token") || "").trim();
+    const initialToken = "";
+    localStorage.removeItem("sia_command_token");
 
     const deviceIdInput = document.getElementById("deviceIdInput");
     const commandTokenInput = document.getElementById("commandTokenInput");
@@ -134,10 +135,6 @@
     deviceIdInput.addEventListener("input", () => {
       updateCommandTopicView();
       localStorage.setItem("sia_device_id", deviceIdInput.value.trim().toLowerCase());
-    });
-
-    commandTokenInput.addEventListener("input", () => {
-      localStorage.setItem("sia_command_token", commandTokenInput.value.trim());
     });
 
     function pushPoint(temp, hum) {

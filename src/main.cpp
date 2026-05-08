@@ -1,6 +1,9 @@
 #include <Arduino.h>
 #include <cinttypes>
 #include <WiFi.h>
+#if !defined(MQTT_USE_TLS) || MQTT_USE_TLS
+#include <WiFiClientSecure.h>
+#endif
 #include <PubSubClient.h>
 #include <DHT.h>
 #include "model.h" // Import your generated TinyML model
@@ -12,8 +15,15 @@
 #ifndef WIFI_CONNECT_TIMEOUT_MS
 #define WIFI_CONNECT_TIMEOUT_MS 15000UL
 #endif
+#ifndef MQTT_USE_TLS
+#define MQTT_USE_TLS 1
+#endif
 #define MQTT_BROKER "broker.hivemq.com"
+#if MQTT_USE_TLS
+#define MQTT_PORT 8883
+#else
 #define MQTT_PORT 1883
+#endif
 #define DATA_TOPIC "sia/compost/data"
 #define COMMAND_TOPIC_PREFIX "sia/compost/commands/"
 #define MQTT_RECONNECT_INTERVAL_MS 5000
@@ -31,7 +41,11 @@
 #define COMMAND_TOKEN ""
 #endif
 
+#if MQTT_USE_TLS
+WiFiClientSecure espClient;
+#else
 WiFiClient espClient;
+#endif
 PubSubClient client(espClient);
 DHT dht(DHTPIN, DHTTYPE);
 Eloquent::Projects::CompostClassifier classifier;
@@ -53,12 +67,16 @@ String getDeviceId() {
 
 void setup_wifi() {
     delay(10);
-    if (ssid[0] == '\0' || password[0] == '\0') {
-        Serial.println("WiFi credentials are not configured; skipping WiFi setup.");
+    if (ssid[0] == '\0') {
+        Serial.println("WiFi SSID is not configured; skipping WiFi setup.");
         return;
     }
     Serial.println("\nConnecting to WiFi...");
-    WiFi.begin(ssid, password);
+    if (password[0] == '\0') {
+        WiFi.begin(ssid);
+    } else {
+        WiFi.begin(ssid, password);
+    }
     unsigned long connectStartedAt = millis();
     while (WiFi.status() != WL_CONNECTED && (millis() - connectStartedAt) < WIFI_CONNECT_TIMEOUT_MS) {
         delay(500);
@@ -82,7 +100,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
         command += (char)payload[i];
     }
     command.trim();
-    command.toUpperCase();
 
     if (commandToken[0] != '\0') {
         String tokenPrefix = String(commandToken) + ":";
@@ -93,6 +110,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
         command = command.substring(tokenPrefix.length());
         command.trim();
     }
+    command.toUpperCase();
 
     if (command == "REFRESH") {
         unsigned long refreshTimestamp = millis() - SAMPLE_INTERVAL_MS;
@@ -130,6 +148,9 @@ void setup() {
     dht.begin();
     pinMode(MQ4_PIN, INPUT);
     setup_wifi();
+#if MQTT_USE_TLS
+    espClient.setInsecure();
+#endif
     client.setServer(MQTT_BROKER, MQTT_PORT);
     client.setCallback(callback);
     deviceId = getDeviceId();
@@ -141,11 +162,16 @@ void setup() {
     } else {
         Serial.println("Command token protection: disabled (set COMMAND_TOKEN build flag to enable)");
     }
+#if MQTT_USE_TLS
+    Serial.println("MQTT transport: TLS enabled");
+#else
+    Serial.println("MQTT transport: plaintext (set MQTT_USE_TLS=1 to enable TLS)");
+#endif
     Serial.println("Sia-Compost-Sync: Edge Inference Mode Active");
 }
 
 void loop() {
-    if (ssid[0] != '\0' && password[0] != '\0') {
+    if (ssid[0] != '\0') {
         if (!client.connected()) {
             unsigned long mqttNow = millis();
             if ((unsigned long)(mqttNow - lastMqttReconnectAttemptMs) >= MQTT_RECONNECT_INTERVAL_MS) {
