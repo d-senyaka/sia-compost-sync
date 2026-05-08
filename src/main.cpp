@@ -13,6 +13,7 @@
 #define DATA_TOPIC "sia/compost/data"
 #define COMMAND_TOPIC "sia/compost/commands"
 #define MQTT_RECONNECT_INTERVAL_MS 5000
+#define RESET_DELAY_MS 100  // Brief pause so reset message can flush on Serial
 
 #ifndef WIFI_SSID
 #define WIFI_SSID ""
@@ -30,6 +31,7 @@ const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 unsigned long lastSampleAtMs = 0;
 unsigned long lastMqttReconnectAttemptMs = 0;
+portMUX_TYPE sampleTimestampMux = portMUX_INITIALIZER_UNLOCKED;
 
 void setup_wifi() {
     delay(10);
@@ -44,8 +46,30 @@ void setup_wifi() {
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
-    // This is for Phase 4 bidirectional control (receiving commands)
     Serial.print("Command received on topic: "); Serial.println(topic);
+
+    String command;
+    for (unsigned int i = 0; i < length; i++) {
+        command += (char)payload[i];
+    }
+    command.trim();
+    command.toUpperCase();
+
+    if (command == "REFRESH") {
+        unsigned long refreshTimestamp = millis() - SAMPLE_INTERVAL_MS;
+        portENTER_CRITICAL(&sampleTimestampMux);
+        lastSampleAtMs = refreshTimestamp;
+        portEXIT_CRITICAL(&sampleTimestampMux);
+        Serial.println("Action: Force refresh scheduled.");
+    } else if (command == "RESET") {
+        Serial.println("Action: System reset requested.");
+        delay(RESET_DELAY_MS);
+        ESP.restart();
+    } else {
+        Serial.print("Action: Unknown command '");
+        Serial.print(command);
+        Serial.println("'.");
+    }
 }
 
 void reconnect() {
@@ -86,10 +110,17 @@ void loop() {
     }
 
     unsigned long sampleNow = millis();
-    if ((unsigned long)(sampleNow - lastSampleAtMs) < SAMPLE_INTERVAL_MS) {
+    unsigned long lastSampleSnapshot;
+    portENTER_CRITICAL(&sampleTimestampMux);
+    lastSampleSnapshot = lastSampleAtMs;
+    portEXIT_CRITICAL(&sampleTimestampMux);
+
+    if ((unsigned long)(sampleNow - lastSampleSnapshot) < SAMPLE_INTERVAL_MS) {
         return;
     }
+    portENTER_CRITICAL(&sampleTimestampMux);
     lastSampleAtMs = sampleNow;
+    portEXIT_CRITICAL(&sampleTimestampMux);
 
     float h = dht.readHumidity();
     float t = dht.readTemperature();
